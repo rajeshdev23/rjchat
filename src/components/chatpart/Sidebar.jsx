@@ -58,16 +58,14 @@ const Sidebar = () => {
   }).sort((a, b) => {
     const dateA = a.chatInfo?.date?.seconds || 0;
     const dateB = b.chatInfo?.date?.seconds || 0;
-    return dateB - dateA;
+    return dateB - dateA || a.name.localeCompare(b.name);
   });
 
-  // Filter users based on search or active chats
+  // Filter users based on search
   const displayUsers = sortedUsers.filter(u => {
     if (search.trim() === "") {
-      // If search is empty, ONLY show users with active chat history (lastMessage exists)
-      return u.chatInfo?.lastMessage;
+      return true; // Show all users by default
     } else {
-      // If searching, show all users matching the name
       return u.name.toLowerCase().includes(search.toLowerCase());
     }
   });
