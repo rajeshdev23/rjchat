@@ -1,6 +1,6 @@
 import React from 'react'
 import Sidebar from '../components/chatpart/Sidebar'
-import Chat from '../components/chatpart/chat'
+import Chat from '../components/chatpart/Chat'
 import "../style.css"
 
 const Home = () => {
