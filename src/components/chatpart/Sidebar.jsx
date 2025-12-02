@@ -60,9 +60,10 @@ const Sidebar = () => {
     return dateB - dateA;
   });
 
-  // Auto-select first user
+  // Auto-select first user (Desktop only)
   useEffect(() => {
-    if (sortedUsers.length > 0 && chatId === "null") {
+    const isDesktop = window.innerWidth >= 768;
+    if (isDesktop && sortedUsers.length > 0 && chatId === "null") {
       handleSelect(sortedUsers[0]);
     }
   }, [sortedUsers, chatId]);

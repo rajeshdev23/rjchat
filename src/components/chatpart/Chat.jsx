@@ -3,11 +3,14 @@ import InputChat from './InputChat'
 import { FaVideo } from "react-icons/fa";
 import { HiDotsHorizontal } from "react-icons/hi";
 import { IoIosPersonAdd } from "react-icons/io";
+import { IoArrowBack } from "react-icons/io5";
 import Messages from './Messages';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import { resetChat } from '../../features/chatSlice';
 
 const Chat = () => {
   const { user } = useSelector((state) => state.chat);
+  const dispatch = useDispatch();
 
   return (
     <div className="chatBox flex flex-col justify-between bg-gray-600  h-[100vh] overflow-hidden">
@@ -15,6 +18,14 @@ const Chat = () => {
       {/* Top Chat Header */}
       <div className="chatInfo flex justify-between items-center w-full px-4 py-3 bg-[#202c33] border-b border-gray-700 h-[60px]">
         <div className="flex items-center gap-4">
+          {/* Back Button for Mobile */}
+          <button
+            onClick={() => dispatch(resetChat())}
+            className="md:hidden text-gray-300 hover:text-white"
+          >
+            <IoArrowBack size={24} />
+          </button>
+
           {user?.avatar && <img src={user.avatar} alt="" className="w-10 h-10 rounded-full object-cover" />}
           <span className="text-white font-medium text-lg">{user?.name || "Select a chat"}</span>
         </div>
