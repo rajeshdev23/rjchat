@@ -19,6 +19,7 @@ const Sidebar = () => {
   const dispatch = useDispatch();
   const [users, setUsers] = useState([]);
   const [userChats, setUserChats] = useState({});
+  const [search, setSearch] = useState("");
   const { user } = useSelector((state) => state.auth);
   const { chatId } = useSelector((state) => state.chat);
 
@@ -60,13 +61,25 @@ const Sidebar = () => {
     return dateB - dateA;
   });
 
+  // Filter users based on search or active chats
+  const displayUsers = sortedUsers.filter(u => {
+    if (search.trim() === "") {
+      // If search is empty, ONLY show users with active chat history (lastMessage exists)
+      return u.chatInfo?.lastMessage;
+    } else {
+      // If searching, show all users matching the name
+      return u.name.toLowerCase().includes(search.toLowerCase());
+    }
+  });
+
   // Auto-select first user (Desktop only)
   useEffect(() => {
     const isDesktop = window.innerWidth >= 768;
-    if (isDesktop && sortedUsers.length > 0 && chatId === "null") {
-      handleSelect(sortedUsers[0]);
+    // Only auto-select if we have displayable users and no chat selected
+    if (isDesktop && displayUsers.length > 0 && chatId === "null") {
+      handleSelect(displayUsers[0]);
     }
-  }, [sortedUsers, chatId]);
+  }, [displayUsers, chatId]);
 
   const handleSelect = async (u) => {
     if (!user || !u) return;
@@ -100,6 +113,7 @@ const Sidebar = () => {
       }
 
       dispatch(changeUser({ user: u, chatId: combinedId }));
+      setSearch(""); // Clear search after selection
 
     } catch (error) {
       console.log("Chat error:", error.message);
@@ -115,11 +129,18 @@ const Sidebar = () => {
           type="search"
           className="!bg-gray-700 !rounded-lg border-none py-2 text-white placeholder-gray-400"
           placeholder="Search or start new chat"
+          onChange={(e) => setSearch(e.target.value)}
+          value={search}
         />
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {sortedUsers.map((u) => {
+        {displayUsers.length === 0 && (
+          <div className='text-center text-gray-500 mt-5'>
+            {search ? "No users found" : "No active chats. Search to start one."}
+          </div>
+        )}
+        {displayUsers.map((u) => {
           const combinedId = user.uid > u.uid ? user.uid + u.uid : u.uid + user.uid;
 
           return (
