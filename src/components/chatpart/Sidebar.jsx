@@ -59,8 +59,10 @@ const Sidebar = () => {
   // 1. Active Chats: Derived from userChats keys to ensure we catch all interactions
   // Normalize userChats to handle both nested objects and legacy dot-notation keys
   const normalizedChats = {};
+  const keys = Object.keys(userChats);
 
-  Object.keys(userChats).forEach(key => {
+  // Pass 1: Handle legacy dot-notation keys first
+  keys.forEach(key => {
     if (key.includes('.userInfo')) {
       const realId = key.split('.userInfo')[0];
       if (!normalizedChats[realId]) normalizedChats[realId] = {};
@@ -77,16 +79,31 @@ const Sidebar = () => {
       const realId = key.split('.unreadCount')[0];
       if (!normalizedChats[realId]) normalizedChats[realId] = {};
       normalizedChats[realId].unreadCount = userChats[key];
-    } else {
-      // Handle correct nested object
-      if (typeof userChats[key] === 'object' && userChats[key] !== null) {
-        normalizedChats[key] = { ...normalizedChats[key], ...userChats[key] };
-      }
+    }
+  });
+
+  // Pass 2: Handle modern nested object keys (overwrites legacy if present)
+  keys.forEach(key => {
+    if (!key.includes('.') && typeof userChats[key] === 'object' && userChats[key] !== null) {
+      if (!normalizedChats[key]) normalizedChats[key] = {};
+      // Merge carefully: prefer the object's properties if they exist
+      normalizedChats[key] = { ...normalizedChats[key], ...userChats[key] };
     }
   });
 
   const activeChats = Object.keys(normalizedChats).map(combinedId => {
     const chatData = normalizedChats[combinedId];
+
+    // Check if it's a group chat
+    if (chatData.userInfo?.isGroup) {
+      return {
+        id: combinedId, // For groups, the combinedId IS the groupId
+        name: chatData.userInfo.displayName,
+        avatar: chatData.userInfo.photoURL,
+        isGroup: true,
+        chatInfo: chatData
+      };
+    }
 
     // Robust ID extraction: Remove current user's UID from combined ID to get the other user's ID
     let otherId = null;
@@ -133,8 +150,9 @@ const Sidebar = () => {
     return null;
   }).filter(u => u !== null)
     .sort((a, b) => {
-      const dateA = a.chatInfo?.date?.seconds || 0;
-      const dateB = b.chatInfo?.date?.seconds || 0;
+      // If date is null (pending write), treat it as "now" so it stays at the top
+      const dateA = a.chatInfo?.date ? a.chatInfo.date.seconds : Number.MAX_SAFE_INTEGER;
+      const dateB = b.chatInfo?.date ? b.chatInfo.date.seconds : Number.MAX_SAFE_INTEGER;
       return dateB - dateA;
     });
 
@@ -158,6 +176,19 @@ const Sidebar = () => {
 
   const handleSelect = async (u) => {
     if (!user || !u) return;
+
+    // Check if it's a group
+    if (u.isGroup) {
+      dispatch(changeUser({ user: u, chatId: u.id }));
+      setSearch("");
+
+      // Reset unread count for group
+      await updateDoc(doc(db, "userChats", user.uid), {
+        [`${u.id}.unreadCount`]: 0
+      });
+      return;
+    }
+
     const otherId = u.uid || u.id;
     const combinedId = user.uid > otherId ? user.uid + otherId : otherId + user.uid;
 
@@ -260,14 +291,16 @@ const Sidebar = () => {
 
             {displayList.map((u) => {
               const otherId = u.uid || u.id;
-              const combinedId = user.uid > otherId ? user.uid + otherId : otherId + user.uid;
+              // For groups, the combinedId is just the ID. For users, it's the combined one.
+              const combinedId = u.isGroup ? u.id : (user.uid > otherId ? user.uid + otherId : otherId + user.uid);
+
               // Check if this user is already in active chats (to style differently if needed, or just for logic)
               // Use normalizedChats if available, otherwise fallback to userChats check (though normalized is better)
               // Since normalizedChats is local to the render, we need to access it or just use the activeChats array
-              const isActiveChat = activeChats.some(chat => chat.id === otherId);
+              const isActiveChat = activeChats.some(chat => chat.id === (u.isGroup ? u.id : otherId));
 
               // Helper to get chat data for display
-              const chatData = activeChats.find(chat => chat.id === otherId)?.chatInfo;
+              const chatData = activeChats.find(chat => chat.id === (u.isGroup ? u.id : otherId))?.chatInfo;
 
               return (
                 <div
