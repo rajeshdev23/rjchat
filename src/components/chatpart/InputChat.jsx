@@ -18,7 +18,7 @@ const InputChat = () => {
 
   const handleSend = async (e) => {
     e.preventDefault()
-    if (!text && !img) return;
+    if (!text.trim() && !img) return;
     if (chatId === "null") return alert("Please select a chat first");
 
     const messageText = text;
