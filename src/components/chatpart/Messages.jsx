@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react'
 import Message from './Message'
 import { useSelector } from 'react-redux'
-import { doc, onSnapshot } from 'firebase/firestore'
+import { doc, onSnapshot, updateDoc } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { MessageSkeleton } from '../../components/utils/Skeleton'
 
@@ -9,19 +9,43 @@ const Messages = () => {
   const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(true)
   const { chatId } = useSelector((state) => state.chat)
+  const { user } = useSelector((state) => state.auth)
   const scrollRef = useRef()
 
   useEffect(() => {
     setLoading(true) // Reset loading when chat changes
-    const unSub = onSnapshot(doc(db, "chats", chatId), (doc) => {
-      doc.exists() && setMessages(doc.data().messages)
+    const unSub = onSnapshot(doc(db, "chats", chatId), (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        setMessages(data.messages);
+
+        // Mark messages as seen if they are from the other user and not yet seen
+        const unreadMessages = data.messages.filter(
+          m => m.senderId !== user.uid && m.status !== "seen"
+        );
+
+        if (unreadMessages.length > 0) {
+          const updatedMessages = data.messages.map(m => {
+            if (m.senderId !== user.uid && m.status !== "seen") {
+              return { ...m, status: "seen" };
+            }
+            return m;
+          });
+
+          // Use a timeout or separate effect to avoid rapid updates if needed, 
+          // but direct update here is standard for this simple logic
+          updateDoc(snapshot.ref, {
+            messages: updatedMessages
+          }).catch(err => console.error("Error marking seen:", err));
+        }
+      }
       setLoading(false)
     })
 
     return () => {
       unSub()
     }
-  }, [chatId])
+  }, [chatId, user.uid])
 
   // Auto scroll to bottom
   useEffect(() => {

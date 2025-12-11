@@ -48,6 +48,7 @@ const InputChat = () => {
           text: messageText,
           senderId: user.uid,
           date: Timestamp.now(),
+          status: "sent",
           ...(downloadURL && { img: downloadURL })
         })
       });
