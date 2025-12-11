@@ -38,7 +38,7 @@ const Chat = () => {
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto px-4 py-2 bg-gray-600">
+      <div className="flex-1 overflow-y-auto px-4 py-2 bg-gray-600 custom-scrollbar">
         <Messages />
       </div>
 

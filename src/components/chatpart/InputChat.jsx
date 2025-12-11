@@ -3,7 +3,7 @@ import Input from '../../utils/Input'
 import Button from '../../utils/Button'
 import { MdOutlineAttachFile } from "react-icons/md";
 import { useSelector } from 'react-redux';
-import { arrayUnion, doc, serverTimestamp, Timestamp, updateDoc, setDoc } from 'firebase/firestore';
+import { arrayUnion, doc, serverTimestamp, Timestamp, updateDoc, setDoc, increment } from 'firebase/firestore';
 import { db, storage } from '../../firebase';
 import { v4 as uuid } from 'uuid';
 import { getDownloadURL, ref, uploadBytesResumable } from 'firebase/storage';
@@ -53,17 +53,22 @@ const InputChat = () => {
       });
 
       await setDoc(doc(db, "userChats", user.uid), {
-        [chatId + ".lastMessage"]: {
-          text: messageText || "📷 Image"
-        },
-        [chatId + ".date"]: serverTimestamp()
+        [chatId]: {
+          lastMessage: {
+            text: messageText || "📷 Image"
+          },
+          date: serverTimestamp()
+        }
       }, { merge: true });
 
       await setDoc(doc(db, "userChats", chatUser.uid), {
-        [chatId + ".lastMessage"]: {
-          text: messageText || "📷 Image"
-        },
-        [chatId + ".date"]: serverTimestamp()
+        [chatId]: {
+          lastMessage: {
+            text: messageText || "📷 Image"
+          },
+          date: serverTimestamp(),
+          unreadCount: increment(1)
+        }
       }, { merge: true });
 
     } catch (error) {

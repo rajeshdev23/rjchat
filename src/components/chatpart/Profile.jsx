@@ -8,13 +8,13 @@ const Profile = ({name, imgUrl , handleClick }) => {
       <div className="w-10 h-10 flex items-center justify-center bg-gray-700 rounded-full">
        <img src={imgUrl} alt={name} />
       </div>
+      
       <div>
         <h4 className="text-white font-medium">{name}</h4>
         <p className="text-gray-400 text-sm">last messsage</p>
       </div>
-
     </div>
   )
 }
 
-export default Profile
+export default Profile ;

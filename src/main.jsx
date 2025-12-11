@@ -11,6 +11,8 @@ import { Provider } from 'react-redux'
 import { store } from './app/store.js'
 import PrivateRoute from './privateroute/PrivateRoute.jsx'
 import RedirectIfLogedIn from './privateroute/RedirectIfLogedIn.jsx'
+import ProfilePage from './pages/ProfilePage.jsx'
+
 const router = createBrowserRouter(
   createRoutesFromElements(
     <Route element={<Layout />}>
@@ -20,7 +22,14 @@ const router = createBrowserRouter(
         </PrivateRoute>
       } />
 
+      <Route path="/profile" element={
+        <PrivateRoute>
+          <ProfilePage />
+        </PrivateRoute>
+      } />
+
       <Route path="/about" element={<About />} />
+
 
       <Route path="/register" element={
         <RedirectIfLogedIn>
