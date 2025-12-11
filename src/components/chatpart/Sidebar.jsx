@@ -187,20 +187,37 @@ const Sidebar = () => {
         await setDoc(chatRef, { messages: [] });
       }
 
-      // Always update userChats to ensure it shows up in the sidebar and is at the top
+      // Check if chat already exists for current user
+      const currentUserChat = userChats[combinedId];
+
+      // Always update userChats to ensure it shows up in the sidebar
       // Use nested object syntax to avoid dot notation issues in setDoc
       await setDoc(doc(db, "userChats", user.uid), {
         [combinedId]: {
           userInfo: userInfo,
-          date: serverTimestamp(),
+          // Only update date if it's a new chat or doesn't exist, otherwise keep existing date
+          date: currentUserChat?.date || serverTimestamp(),
           unreadCount: 0
         }
       }, { merge: true });
 
+      // Check if chat exists for other user to avoid overwriting their date/unread count unnecessarily
+      // Actually, for the other user, we just want to ensure the chat exists. 
+      // We shouldn't change their date or unread count just because WE clicked the chat.
+      // But if it's a NEW chat, we need to initialize it.
+
+      // For simplicity and safety, we'll only set initial data if it doesn't exist, 
+      // or just update userInfo in case they changed avatar/name.
+      // But we must NOT change their date here.
+
       await setDoc(doc(db, "userChats", otherId), {
         [combinedId]: {
           userInfo: currentUserInfo,
-          date: serverTimestamp()
+          // We don't update date for them when WE click. 
+          // It will be updated when we send a message.
+          // If it's a new chat, we might want to set a date, but let's leave it to the first message.
+          // However, to ensure it appears in their list if it's brand new:
+          ...((!currentUserChat) ? { date: serverTimestamp() } : {})
         }
       }, { merge: true });
 
