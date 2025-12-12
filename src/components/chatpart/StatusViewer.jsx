@@ -11,6 +11,8 @@ const StatusViewer = ({ status, onClose }) => {
     const [progress, setProgress] = useState(0);
     const [showViewers, setShowViewers] = useState(false);
     const [realtimeStories, setRealtimeStories] = useState(status?.stories || []);
+    const [isPaused, setIsPaused] = useState(false);
+    const videoRef = useRef(null);
 
     // Listen to real-time updates for this status
     useEffect(() => {
@@ -70,7 +72,7 @@ const StatusViewer = ({ status, onClose }) => {
                                         {
                                             uid: user.uid,
                                             name: user.displayName || "User",
-                                            avatar: user.photoURL,
+                                            avatar: user.photoURL || "https://cdn-icons-png.flaticon.com/512/149/149071.png",
                                             timestamp: Timestamp.now()
                                         }
                                     ]
@@ -90,7 +92,7 @@ const StatusViewer = ({ status, onClose }) => {
         const timeout = setTimeout(recordView, 1000);
         return () => clearTimeout(timeout);
 
-    }, [currentIndex, currentStory, isOwner, user.uid, status.userInfo.uid]);
+    }, [currentIndex, currentStory?.id, isOwner, user.uid, status.userInfo.uid]);
 
 
     useEffect(() => {
@@ -101,18 +103,36 @@ const StatusViewer = ({ status, onClose }) => {
         const interval = 50;
         const step = 100 / (duration / interval);
 
-        timerRef.current = setInterval(() => {
-            setProgress(prev => {
-                if (prev >= 100) {
-                    handleNext();
-                    return 100;
-                }
-                return prev + step;
-            });
+        const intervalId = setInterval(() => {
+            if (!isPaused) {
+                setProgress(prev => {
+                    if (prev >= 100) {
+                        handleNext();
+                        return 100;
+                    }
+                    return prev + step;
+                });
+            }
         }, interval);
 
+        timerRef.current = intervalId;
+
         return () => clearInterval(timerRef.current);
-    }, [currentIndex, currentStory, showViewers]);
+    }, [currentIndex, currentStory, showViewers, isPaused]);
+
+    // Handle Video Pause/Play
+    useEffect(() => {
+        if (currentStory?.type === 'video' && videoRef.current) {
+            if (isPaused) {
+                videoRef.current.pause();
+            } else {
+                videoRef.current.play();
+            }
+        }
+    }, [isPaused, currentStory]);
+
+    const handleHoldStart = () => setIsPaused(true);
+    const handleHoldEnd = () => setIsPaused(false);
 
     const handleNext = () => {
         if (currentIndex < validStories.length - 1) {
@@ -138,7 +158,8 @@ const StatusViewer = ({ status, onClose }) => {
         }
     }, [validStories.length, currentIndex]);
 
-    const handleDeleteClick = () => {
+    const handleDeleteClick = (e) => {
+        e.stopPropagation();
         setShowDeleteConfirm(true);
     };
 
@@ -221,7 +242,7 @@ const StatusViewer = ({ status, onClose }) => {
             )}
 
             {/* Header */}
-            <div className="absolute top-8 left-4 flex items-center gap-3 z-10">
+            <div className="absolute top-8 left-4 flex items-center gap-3 z-50">
                 <img src={status.userInfo.photoURL} alt="" className="w-10 h-10 rounded-full border border-white" />
                 <div className="flex flex-col">
                     <span className="text-white font-medium">{status.userInfo.displayName}</span>
@@ -231,7 +252,7 @@ const StatusViewer = ({ status, onClose }) => {
                 </div>
             </div>
 
-            <div className="absolute top-8 right-4 flex items-center gap-4 z-10">
+            <div className="absolute top-8 right-4 flex items-center gap-4 z-50">
                 {isOwner && (
                     <button onClick={handleDeleteClick} className="text-white hover:text-red-500 transition">
                         <MdDelete size={24} />
@@ -247,8 +268,33 @@ const StatusViewer = ({ status, onClose }) => {
                 {/* Navigation Areas */}
                 {!showViewers && (
                     <>
-                        <div className="absolute inset-y-0 left-0 w-1/3 z-20" onClick={handlePrev} />
-                        <div className="absolute inset-y-0 right-0 w-1/3 z-20" onClick={handleNext} />
+                        <div
+                            className="absolute inset-y-0 left-0 w-1/3 z-20"
+                            onClick={handlePrev}
+                            onMouseDown={handleHoldStart}
+                            onMouseUp={handleHoldEnd}
+                            onMouseLeave={handleHoldEnd}
+                            onTouchStart={handleHoldStart}
+                            onTouchEnd={handleHoldEnd}
+                        />
+                        <div
+                            className="absolute inset-y-0 right-0 w-1/3 z-20"
+                            onClick={handleNext}
+                            onMouseDown={handleHoldStart}
+                            onMouseUp={handleHoldEnd}
+                            onMouseLeave={handleHoldEnd}
+                            onTouchStart={handleHoldStart}
+                            onTouchEnd={handleHoldEnd}
+                        />
+                        {/* Center area for holding without navigating */}
+                        <div
+                            className="absolute inset-y-0 left-1/3 right-1/3 z-20"
+                            onMouseDown={handleHoldStart}
+                            onMouseUp={handleHoldEnd}
+                            onMouseLeave={handleHoldEnd}
+                            onTouchStart={handleHoldStart}
+                            onTouchEnd={handleHoldEnd}
+                        />
                     </>
                 )}
 
@@ -258,6 +304,7 @@ const StatusViewer = ({ status, onClose }) => {
                         autoPlay={!showViewers}
                         className="max-h-full max-w-full object-contain"
                         onEnded={handleNext}
+                        ref={videoRef}
                     />
                 ) : (
                     <img

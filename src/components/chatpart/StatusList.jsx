@@ -9,10 +9,14 @@ import StatusViewer from './StatusViewer';
 const StatusList = () => {
     const { user } = useSelector((state) => state.auth);
     const [myStatus, setMyStatus] = useState(null);
-    const [recentUpdates, setRecentUpdates] = useState([]);
+    const [recentUpdates, setRecentUpdates] = useState([]); // Kept for safety, though unused now generally we use filtered lists
+    // const [sortedUpdates, setSortedUpdates] = useState([]);
+    const [newUpdates, setNewUpdates] = useState([]);
+    const [viewedUpdates, setViewedUpdates] = useState([]);
     const [showUpload, setShowUpload] = useState(false);
     const [viewingStatus, setViewingStatus] = useState(null);
     const [friendsMap, setFriendsMap] = useState({});
+    const [isViewedExpanded, setIsViewedExpanded] = useState(false);
 
     // 1. Fetch Friends List (people I have chatted with)
     useEffect(() => {
@@ -88,7 +92,27 @@ const StatusList = () => {
 
             // Sort by last updated
             statuses.sort((a, b) => b.lastUpdated?.seconds - a.lastUpdated?.seconds);
-            setRecentUpdates(statuses);
+            // Sort by last updated
+            statuses.sort((a, b) => b.lastUpdated?.seconds - a.lastUpdated?.seconds);
+
+            // Split into new and viewed
+            const newSt = [];
+            const viewedSt = [];
+
+            statuses.forEach(status => {
+                const isFullyViewed = status.stories.every(story =>
+                    story.viewers && story.viewers.some(v => v.uid === user.uid)
+                );
+
+                if (isFullyViewed) {
+                    viewedSt.push(status);
+                } else {
+                    newSt.push(status);
+                }
+            });
+
+            setNewUpdates(newSt);
+            setViewedUpdates(viewedSt);
         });
 
         return () => {
@@ -123,14 +147,14 @@ const StatusList = () => {
 
             <hr className="border-gray-800 mx-4" />
 
-            {/* Recent Updates */}
-            <div className="p-4">
+            {/* Recent Updates (Unseen) */}
+            <div className="p-4 pb-0">
                 <h3 className="text-teal-500 text-sm font-medium mb-4 uppercase">Recent updates</h3>
                 <div className="flex flex-col gap-4">
-                    {recentUpdates.length === 0 ? (
-                        <p className="text-gray-500 text-sm text-center italic">No recent updates</p>
+                    {newUpdates.length === 0 ? (
+                        <p className="text-gray-500 text-sm italic">No new updates</p>
                     ) : (
-                        recentUpdates.map(status => (
+                        newUpdates.map(status => (
                             <div key={status.userInfo.uid} className="flex items-center gap-3 cursor-pointer hover:bg-[#202c33] p-2 rounded-lg transition" onClick={() => setViewingStatus(status)}>
                                 <div className="relative">
                                     <img
@@ -150,6 +174,41 @@ const StatusList = () => {
                     )}
                 </div>
             </div>
+
+            {/* Viewed Updates */}
+            {viewedUpdates.length > 0 && (
+                <div className="p-4">
+                    <div
+                        className="flex items-center justify-between cursor-pointer mb-4"
+                        onClick={() => setIsViewedExpanded(!isViewedExpanded)}
+                    >
+                        <h3 className="text-gray-400 text-sm font-medium uppercase">Viewed updates</h3>
+                        <span className="text-gray-400 text-xl">{isViewedExpanded ? '−' : '+'}</span>
+                    </div>
+
+                    {isViewedExpanded && (
+                        <div className="flex flex-col gap-4">
+                            {viewedUpdates.map(status => (
+                                <div key={status.userInfo.uid} className="flex items-center gap-3 cursor-pointer hover:bg-[#202c33] p-2 rounded-lg transition opacity-60" onClick={() => setViewingStatus(status)}>
+                                    <div className="relative">
+                                        <img
+                                            src={status.userInfo.photoURL}
+                                            alt=""
+                                            className="w-12 h-12 rounded-full object-cover border-2 border-gray-500 p-[2px]"
+                                        />
+                                    </div>
+                                    <div className="flex-1">
+                                        <h3 className="text-white font-medium">{status.userInfo.displayName}</h3>
+                                        <p className="text-gray-400 text-xs">
+                                            {status.lastUpdated?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Modals */}
             {showUpload && <StatusUploadModal onClose={() => setShowUpload(false)} />}
