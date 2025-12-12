@@ -119,9 +119,9 @@ const Chat = () => {
                 <IoArrowBack size={24} />
               </button>
 
-              {user?.avatar && <img src={user.avatar} alt="" className="w-10 h-10 rounded-full object-cover" />}
+              {(user?.avatar || user?.photoURL) && <img src={user?.photoURL || user?.avatar} alt="" className="w-10 h-10 rounded-full object-cover" />}
               <div className="flex flex-col">
-                <span className="text-white font-medium text-lg leading-tight">{user?.name || "Select a chat"}</span>
+                <span className="text-white font-medium text-lg leading-tight">{user?.name || user?.displayName || "Select a chat"}</span>
                 {user?.isGroup && <span className="text-xs text-gray-400">Click for group info</span>}
               </div>
             </div>
