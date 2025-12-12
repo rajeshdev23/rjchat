@@ -87,7 +87,7 @@ const Chat = () => {
   };
 
   return (
-    <div className="chatBox flex flex-col justify-between bg-gray-600  h-[100vh] overflow-hidden">
+    <div className="chatBox flex flex-col justify-between bg-gray-600 h-full overflow-hidden">
 
       {/* Top Chat Header */}
       <div className="chatInfo flex justify-between items-center w-full px-4 py-3 bg-[#202c33] border-b border-gray-700 h-[60px] relative z-20">
