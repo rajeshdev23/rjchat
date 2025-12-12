@@ -73,24 +73,24 @@ const Search = () => {
                 // create a chat in chats collection
                 await setDoc(doc(db, "chats", combinedId), { messages: [] });
 
-                // create user chats
-                await updateDoc(doc(db, "userChats", currentUser.uid), {
+                // create user chats (use setDoc with merge to create if doesn't exist)
+                await setDoc(doc(db, "userChats", currentUser.uid), {
                     [combinedId + ".userInfo"]: {
                         uid: selectedUser.uid,
                         displayName: selectedUser.name,
                         photoURL: selectedUser.avatar,
                     },
                     [combinedId + ".date"]: serverTimestamp(),
-                });
+                }, { merge: true });
 
-                await updateDoc(doc(db, "userChats", selectedUser.uid), {
+                await setDoc(doc(db, "userChats", selectedUser.uid), {
                     [combinedId + ".userInfo"]: {
                         uid: currentUser.uid,
                         displayName: currentUser.name,
                         photoURL: currentUser.avatar,
                     },
                     [combinedId + ".date"]: serverTimestamp(),
-                });
+                }, { merge: true });
             }
         } catch (err) {
             console.error("Error in handleSelect:", err);
