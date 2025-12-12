@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import Input from '../../utils/Input'
 import Button from '../../utils/Button'
 import { MdOutlineAttachFile, MdClose } from "react-icons/md";
@@ -12,6 +12,7 @@ const InputChat = ({ replyMessage, setReplyMessage }) => {
   const [text, setText] = useState("")
   const [attachments, setAttachments] = useState([])
   const [loading, setLoading] = useState(false)
+  const inputRef = useRef(null)
 
   const { user, profile } = useSelector((state) => state.auth)
   const { chatId, user: chatUser } = useSelector((state) => state.chat)
@@ -183,6 +184,16 @@ const InputChat = ({ replyMessage, setReplyMessage }) => {
     }
   };
 
+  // Handle input focus - scroll into view on mobile
+  const handleInputFocus = () => {
+    // Small delay to let keyboard animation start
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }, 300);
+  };
+
   return (
     <div className='w-full flex flex-col'>
       {/* Reply Preview */}
@@ -216,10 +227,12 @@ const InputChat = ({ replyMessage, setReplyMessage }) => {
       <form className=' p-0 w-full flex gap-5 justify-between items-center h-[60px] px-4' onSubmit={handleSend}>
         <div className="textInput w-[85%]">
           <Input
+            ref={inputRef}
             type='text'
             className=' !rounded-none !w-full !bg-transparent !border-none text-white placeholder-gray-400 focus:ring-0'
             placeholder='Type something...'
             onChange={e => setText(e.target.value)}
+            onFocus={handleInputFocus}
             value={text}
           />
         </div>
